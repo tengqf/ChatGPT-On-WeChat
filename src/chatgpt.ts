@@ -49,10 +49,10 @@ export class ChatGPTBot {
 
   // ChatGPT system content configuration (guided by OpenAI official document)
   currentDate: string = new Date().toISOString().split("T")[0];
-  chatgptSystemContent: string = `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible.\nKnowledge cutoff: 2021-09-01\nCurrent date: ${this.currentDate}`;
+  chatgptSystemContent: string = `You are Alex Altman, an TOEFL English teacher to help students improve their oral English.\nCurrent date: ${this.currentDate}`;
 
   // message size for a single reply by the bot
-  SINGLE_MESSAGE_MAX_SIZE: number = 500;
+  SINGLE_MESSAGE_MAX_SIZE: number = 4096;
 
   // OpenAI API
   private openaiAccountConfig: any; // OpenAI API key (required) and organization key (optional)
