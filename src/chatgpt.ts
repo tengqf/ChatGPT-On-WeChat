@@ -47,6 +47,14 @@ export class ChatGPTBot {
     // max_tokens: 2000,
   };
 
+  gpt4vModelConfig: object = {
+    // this model field is required
+    model: "gpt-4-1106-preview",
+    // add your ChatGPT model parameters below
+    temperature: 0.8,
+    // max_tokens: 2000,
+  };
+
   // ChatGPT system content configuration (guided by OpenAI official document)
   currentDate: string = new Date().toISOString().split("T")[0];
   chatgptSystemContent: string = `You are Alex Altman, an TOEFL English teacher to help students improve their oral English.\nCurrent date: ${this.currentDate}`;
@@ -178,6 +186,31 @@ export class ChatGPTBot {
     return messages;
   }
 
+  private createMessages4V(text: string, imageBase64: string): Array<Object> {
+    const messages = [
+      {
+        role: "system",
+        content: this.chatgptSystemContent,
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": text
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "data:image/jpeg;base64," + imageBase64
+            }
+          }
+        ]
+      },
+    ];
+    return messages;
+  }
+
   // send question to ChatGPT with OpenAI API and get answer
   private async onChatGPT(text: string): Promise<string> {
     const inputMessages = this.createMessages(text);
@@ -226,6 +259,37 @@ export class ChatGPTBot {
     }
   }
 
+  // send question to ChatGPT with OpenAI API and get answer
+  private async onGPT4V(text: string, imageBase64: string): Promise<string> {
+    const inputMessages = this.createMessages4V(text, imageBase64);
+    try {
+      // config OpenAI API request body
+      const response = await this.openaiApiInstance.createChatCompletion({
+        ...this.gpt4vModelConfig,
+        messages: inputMessages,
+      });
+      // use OpenAI API to get ChatGPT reply message
+      const chatgptReplyMessage =
+          response?.data?.choices[0]?.message?.content?.trim();
+      console.log(`🤖️ ChatGPT says: ${chatgptReplyMessage}`);
+      return chatgptReplyMessage;
+    } catch (e: any) {
+      console.error(`❌ ${e}`);
+      const errorResponse = e?.response;
+      const errorCode = errorResponse?.status;
+      const errorStatus = errorResponse?.statusText;
+      const errorMessage = errorResponse?.data?.error?.message;
+      if (errorCode && errorStatus) {
+        const errorLog = `Code ${errorCode}: ${errorStatus}`;
+        console.error(`❌ ${errorLog}`);
+      }
+      if (errorMessage) {
+        console.error(`❌ ${errorMessage}`);
+      }
+      return this.chatgptErrorMessage;
+    }
+  }
+
   // reply to private message
   private async onPrivateMessage(talker: ContactInterface, text: string) {
     // get reply from ChatGPT
@@ -243,6 +307,21 @@ export class ChatGPTBot {
     await this.reply(room, wholeReplyMessage);
   }
 
+  private async onPrivateMessageImage(talker: ContactInterface, text: string, imageBase64: string) {
+    // get reply from ChatGPT
+    const chatgptReplyMessage = await this.onGPT4V(text, imageBase64);
+    // send the ChatGPT reply to chat
+    await this.reply(talker, chatgptReplyMessage);
+  }
+
+  // reply to group message
+  private async onGroupMessageImage(room: RoomInterface, text: string, imageBase64: string) {
+    // get reply from ChatGPT
+    const chatgptReplyMessage = await this.onGPT4V(text, imageBase64);
+    // the whole reply consist of: original text and bot reply
+    await this.reply(room, chatgptReplyMessage);
+  }
+
   // receive a message (main entry)
   async onMessage(message: Message) {
     const talker = message.talker();
@@ -250,6 +329,20 @@ export class ChatGPTBot {
     const room = message.room();
     const messageType = message.type();
     const isPrivateChat = !room;
+
+    // 处理图片
+    if (messageType == MessageType.Image) {
+      const image = await message.toFileBox()  // 取出文件到filebox
+      const imageBase64 = image.toBase64.toString()  // 转成base64编码
+      const text = "请描述图中的内容"
+      // 进行后续处理
+      if (isPrivateChat) {
+        return await this.onPrivateMessageImage(talker, text, imageBase64);
+      } else {
+        return await this.onGroupMessageImage(room, text, imageBase64);
+      }
+    }
+
     // do nothing if the message:
     //    1. is irrelevant (e.g. voice, video, location...), or
     //    2. doesn't trigger bot (e.g. wrong trigger-word)
