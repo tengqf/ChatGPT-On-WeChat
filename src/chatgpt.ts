@@ -49,15 +49,15 @@ export class ChatGPTBot {
 
   gpt4vModelConfig: object = {
     // this model field is required
-    model: "gpt-4-1106-preview",
+    model: "gpt-4-vision-preview",
     // add your ChatGPT model parameters below
     temperature: 0.8,
-    // max_tokens: 2000,
+    max_tokens: 2000,
   };
 
   // ChatGPT system content configuration (guided by OpenAI official document)
   currentDate: string = new Date().toISOString().split("T")[0];
-  chatgptSystemContent: string = `You are Alex Altman, an TOEFL English teacher to help students improve their oral English.\nCurrent date: ${this.currentDate}`;
+  chatgptSystemContent: string = `Summary the medical examination report, and reply with only physiological indicators and the date of examination of your patients in Chinese.\nCurrent date: ${this.currentDate}`;
 
   // message size for a single reply by the bot
   SINGLE_MESSAGE_MAX_SIZE: number = 4096;
