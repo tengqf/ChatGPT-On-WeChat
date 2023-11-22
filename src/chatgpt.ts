@@ -333,7 +333,8 @@ export class ChatGPTBot {
     // 处理图片
     if (messageType == MessageType.Image) {
       const image = await message.toFileBox()  // 取出文件到filebox
-      const imageBase64 = image.toBase64.toString()  // 转成base64编码
+      const imageBase64 = await image.toBase64.toString()  //转成base64编码
+      //const imageBase64 = image.toBase64.toString()  // 转成base64编码
       console.log(imageBase64) //测试图片编码是否正确
       const text = "请描述图中的内容"
       // 进行后续处理
